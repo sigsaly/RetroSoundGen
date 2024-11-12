@@ -16,6 +16,22 @@ Retro Sound Generator (RSG) is a project that uses 8 AY-3-8910 chips and an STM3
 
 - Refer to Circuit Diagram
 
+## 3. Build Environment 🚀
+
+- STM32CubeIDE
+
+## 4. Demo Video 🎥
+
+- Coming Soon
+
+## License 📄
+
+This project is licensed under the [MIT License](LICENSE).
+
+## Do not Contact 📧
+
+sigsaly@naver.com
+
 Below is a brief explanation of the build process.
 
 1. **Use of STM32F446 Board Module**
@@ -29,19 +45,3 @@ Below is a brief explanation of the build process.
 3. **Wire wrapping**
 
    <img src="images/wire_wrapping.jpg" alt="Wiring" width="480" height="320">
-
-## 3. Build Environment 🚀
-
-- STM32CubeIDE
-
-## 4. Demo Video 🎥
-
-- Coming Soon
-
-## License 📄
-
-This project is licensed under the [MIT License](LICENSE).
-
-## Contact 📧
-
-sigsaly@naver.com.

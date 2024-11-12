@@ -1,0 +1,5 @@
+# 빌드 결과물
+/RetroSoundGen/Debug/
+/RetroSoundGen/Release/
+*_old.c
+*_old.h

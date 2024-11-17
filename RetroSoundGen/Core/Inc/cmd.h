@@ -12,9 +12,9 @@
 extern "C" {
 #endif
 
-#define CMDBUFSIZE  128
-#define MAXCMDLEN   128
-#define MAXPARAMLEN 64
+#define MAXCMDLEN   32
+#define MAXPARAMLEN 32
+#define CMD_BUFFER_SIZE (64)
 
 
 typedef struct command
@@ -27,7 +27,7 @@ extern const CMD_TBL cmd_tbl[];
 
 char* parse_int(const char *str, int *val, int base);
 char *get_token(char *line, char *cmd);
-void cmd_loop(void);
+//void cmd_loop(void);
 int show_help(char *c_ln);
 int cmd_exit(char *c_ln);
 

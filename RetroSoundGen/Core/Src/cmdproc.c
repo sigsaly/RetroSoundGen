@@ -10,8 +10,12 @@
 #include "cmd.h"
 #include "uart.h"
 
-char cbuf[CMDBUFSIZE];
-char saved_cmd[CMDBUFSIZE];
+//char cbuf[CMDBUFSIZE];
+//char saved_cmd[CMDBUFSIZE];
+char cmd_buffer[CMD_BUFFER_SIZE];
+char prev_command[CMD_BUFFER_SIZE];
+uint8_t cmd_pos = 0;
+uint8_t command_mode = 0;
 
 char* parse_int(const char *str, int *val, int base)
 {
@@ -47,7 +51,6 @@ char *get_token(char *str, char *cmd)
 }
 
 
-
 int run_cmd(char *cmd_line)
 {
 	CMD_TBL *p_tbl;
@@ -56,6 +59,8 @@ int run_cmd(char *cmd_line)
 	char *rem;
 
 	rem = get_token(cmd_line, cmd);
+
+	printf("\n");
 
 	if (!cmd[0]){
 		return 0;
@@ -75,12 +80,13 @@ int run_cmd(char *cmd_line)
 		p_tbl++;
 		cmd_ptr = p_tbl->cmd;
 	}
-	printf("\n");
+
 	if (!p_tbl->cmd)
 		printf ("\nInvalid Command! (See Help.)\n");
 	return 0;
 }
 
+/*
 void scan_cmd (char *chr_ptr)
 {
 	int cnt = 0;
@@ -112,9 +118,9 @@ void scan_cmd (char *chr_ptr)
 			cnt++;
 		}
 	}
-}
+}*/
 
-
+/*
 void cmd_loop(void)
 {
 	char *cbuf_ptr;
@@ -137,7 +143,7 @@ void cmd_loop(void)
 		//	u_putchar('$');
 		//}
 	}
-}
+}*/
 
 int show_help(char *c_ln)
 {
@@ -158,7 +164,8 @@ int show_help(char *c_ln)
 int cmd_exit(char *c_ln)
 {
 	printf("Exit command mode\n");
-	return -1;
+	command_mode = 0;
+	return 0;
 }
 
 int get_cmd_int(char *c_ln, char *usage)

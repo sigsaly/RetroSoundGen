@@ -15,9 +15,10 @@ extern UART_HandleTypeDef huart2;
 extern uint8_t rx_data;
 extern uint8_t rmidi_data;
 void uart_proc(void);
-int u_kbhit();
+void uart_init();
+//int u_kbhit();
 char u_getchar();
 void u_putchar(char c);
-void u_printf(const char* format, ...);
+//void u_printf(const char* format, ...);
 void t_printf(const char *format, ...);
 #endif /* INC_UART_H_ */

@@ -82,7 +82,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	int cnt = 0;
+  int cnt = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -116,6 +116,7 @@ int main(void)
   if (HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1) != HAL_OK) {
     Error_Handler();
   }
+  uart_init();
   //HAL_TIM_Base_Start(&htim5);
   printf("RetroSoundGen start......\n");
   //sysclk_freq = HAL_RCC_GetSysClockFreq();
@@ -132,9 +133,9 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    if(u_kbhit()){
-    	cmd_loop();
-    }
+    //if(u_kbhit()){
+    //	cmd_loop();
+    //}
     //cnt++;
     //if((cnt % 500000) == 0)
     //	u_putchar('a');

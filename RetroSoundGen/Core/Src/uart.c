@@ -6,12 +6,19 @@
  */
 #include "uart.h"
 #include <stdio.h>
+#include <string.h>
 #include <stdarg.h>
 #include <sys/unistd.h>
+#include "cmd.h"
 
 
 #define U_BUF_SIZE (64)
 #define MIDI_BUF_SIZE (64)
+
+extern char cmd_buffer[];
+extern char prev_command[];
+extern uint8_t cmd_pos;
+extern uint8_t command_mode;
 
 uint8_t rx_push_pos = 0;
 uint8_t rx_pop_pos = 0;
@@ -33,29 +40,19 @@ uint8_t tmidi_pop_pos = 0;
 uint8_t tmidi_data;
 uint8_t tmidi_buff[MIDI_BUF_SIZE];
 
-#if 0
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-	//u_putchar('a');
-	if(huart->Instance == USART2){
-			rmidi_buff [rmidi_push_pos] = rmidi_data;
-			if(rmidi_push_pos >= MIDI_BUF_SIZE - 1)
-				rmidi_push_pos = 0;
-			else
-				rmidi_push_pos++;
-			HAL_UART_Receive_IT(&huart2, &rmidi_data, 1);
-		}
-}
-
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
-{
-}
-#endif
 
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-    if (huart->Instance == USART2) {
+	if(huart->Instance == USART1){
+		rx_buff [rx_push_pos] = rx_data;
+		if(rx_push_pos >= U_BUF_SIZE - 1)
+			rx_push_pos = 0;
+		else
+			rx_push_pos++;
+		HAL_UART_Receive_IT(&huart1, &rx_data, 1);
+
+	} else if (huart->Instance == USART2) {
         // 수신된 MIDI 데이터를 수신 버퍼에 저장
         rmidi_buff[rmidi_push_pos] = rmidi_data;
 
@@ -96,6 +93,10 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
             HAL_UART_Transmit_IT(&huart2, &tmidi_buff[tmidi_pop_pos], 1);
         }
     }
+}
+
+void uart_init(){
+	HAL_UART_Receive_IT(&huart1, &rx_data, 1);
 }
 
 void uart_proc(void)
@@ -144,19 +145,8 @@ void uart_proc(void)
 			HAL_UART_Transmit_IT(&huart2, (uint8_t *)&ch, 1);
 		}
 	}
-#if 0
-	/* echo received chars */
-	while(rx_push_pos != rx_pop_pos)
-	{
-		uint8_t ch = rx_buff[rx_pop_pos];
-		if(rx_pop_pos >= U_BUF_SIZE - 1)
-			rx_pop_pos = 0;
-		else
-			rx_pop_pos++;
-		u_putchar(ch);
-	}
 
-	if(tx_push_pos != tx_pop_pos)
+	while(tx_push_pos != tx_pop_pos)
 	{
 		if(huart1.gState == HAL_UART_STATE_READY)
 		{
@@ -168,36 +158,83 @@ void uart_proc(void)
 			HAL_UART_Transmit_IT(&huart1, (uint8_t *)&ch, 1);
 		}
 	}
-#endif
+
+    while(rx_pop_pos != rx_push_pos) {
+        char ch = rx_buff[rx_pop_pos];
+        if(rx_pop_pos >= U_BUF_SIZE - 1)
+            rx_pop_pos = 0;
+        else
+            rx_pop_pos++;
+
+        if (command_mode) {
+            if (ch == '\x1B' && u_getchar() == '[' && u_getchar() == 'A') {
+                // copy previous command to the cmd_buffer
+                strcpy(cmd_buffer, prev_command);
+                cmd_pos = strlen(cmd_buffer);  // cursor to end of line
+                printf("\033[K\r$ %s", cmd_buffer);
+                //printf("\r$%s", cmd_buffer); // erase line and echo cmd_buffer
+                fflush(stdout);
+            }
+            else if (ch == '\r' || ch == '\n') {  // is it Enter?
+                u_putchar('\n');  // new line
+                cmd_buffer[cmd_pos] = '\0';  // end of string
+                strcpy(prev_command, cmd_buffer);
+                run_cmd(cmd_buffer);
+                cmd_pos = 0;  // init command buffer
+                u_putchar('$');  // prompt
+            }
+            else if (cmd_pos < CMD_BUFFER_SIZE - 1) {
+                // echo character for command mode
+                u_putchar(ch);
+                cmd_buffer[cmd_pos++] = ch;  // 입력 문자 저장
+            }
+        }
+        else {
+            // into command mode
+            if (ch == ':') {
+                command_mode = 1;
+                cmd_pos = 0;  // init command buffer
+                u_putchar('$');  // prompt
+            }
+        }
+    }
 }
 
-int u_kbhit()
-{
-    if(__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE))
-    {
-        return 1;
-    }
-    return 0;
-}
+//int u_kbhit()
+//{
+//    if(__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE))
+//    {
+//        return 1;
+//    }
+//    return 0;
+//}
 
 char u_getchar()
 {
-    uint8_t data = 0;
-    //printf("u_get\n");
-    HAL_UART_Receive(&huart1, &data, 1, HAL_MAX_DELAY);
-    //printf("char\n");
-    return data;
+    //uint8_t data = 0;
+    //HAL_UART_Receive(&huart1, &data, 1, HAL_MAX_DELAY);
+    //return data;
+	while(rx_push_pos == rx_pop_pos);
+
+	uint8_t ch = rx_buff[rx_pop_pos];
+	if(rx_pop_pos >= U_BUF_SIZE - 1)
+		rx_pop_pos = 0;
+	else
+		rx_pop_pos++;
+	return ch;
 }
 
-void u_putchar(char c)
+void u_putchar(char ch)
 {
 	//if(huart1.gState == HAL_UART_STATE_READY)
-	//if(__HAL_UART_GET_FLAG(&huart1, UART_FLAG_TXE))
-	while(!__HAL_UART_GET_FLAG(&huart1, UART_FLAG_TXE));
-
-	{
-		HAL_UART_Transmit(&huart1, (uint8_t*)&c, 1, 0); //0);
-	}
+	//{
+	//	HAL_UART_Transmit(&huart1, (uint8_t*)&c, 1, 0);
+	//}
+	tx_buff[tx_push_pos] = ch;
+	if(tx_push_pos >= U_BUF_SIZE - 1)
+		tx_push_pos = 0;
+	else
+		tx_push_pos++;
 }
 
 int _write(int file, char *data, int len)
@@ -207,17 +244,19 @@ int _write(int file, char *data, int len)
         return -1;
     }
 
-    HAL_UART_Transmit(&huart1, (uint8_t*)data, len, HAL_MAX_DELAY);
+    //HAL_UART_Transmit(&huart1, (uint8_t*)data, len, HAL_MAX_DELAY);
+    for(int i = 0; i< len; i++)
+    	u_putchar(*data++);
     return len;
 }
 
-void u_printf(const char* format, ...)
-{
-	va_list arg;
-	va_start(arg, format);
-	vprintf(format, arg);
-	va_end(arg);
-}
+//void u_printf(const char* format, ...)
+//{
+//	va_list arg;
+//	va_start(arg, format);
+//	vprintf(format, arg);
+//	va_end(arg);
+//}
 
 void t_printf(const char *format, ...)
 {
